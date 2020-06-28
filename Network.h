@@ -28,10 +28,10 @@ class Network {
 
     double learning_rate;
     
-    void backpropagate(const Matrix & correct_outputs);
     Matrix getOutputLayer() const;
    
     public:
+    void backpropagate(const Matrix & correct_outputs);
 
     void feedforward(const Matrix & inputs);
         Network();
@@ -41,6 +41,7 @@ class Network {
         Matrix & operator = (const std::initializer_list<double> & list);
 
         void     train  (vector2D inputs, vector2D output); 
+        void     train  (const std::vector<Matrix> & inputs, const std::vector<Matrix> & outputs);
         vector1D predict(vector1D inputs, vector1D output) const;    
         double   test   (vector2D inputs, vector2D output) const;
         
@@ -75,14 +76,10 @@ vector1D oneHot(vector1D output_layer);
 class Activation {
     public:
         virtual Matrix activate(const Matrix & layer) {
-            std::cout << "in Activation" << std::endl;
-
             return layer;
         }
 
         virtual Matrix activate_prime(const Matrix & layer) {
-            std::cout << "in Activation prime" << std::endl;
-
             return layer;
         }
 };
@@ -91,9 +88,7 @@ class Step : public Activation {
     public:
         
         virtual Matrix activate(const Matrix & layer) override {
-            std::cout << "in Step" << std::endl << std::flush;
             Matrix output_matrix (layer);
-            std::cout << "Layer before step : " << std::endl << layer << std::endl;
 
             for (unsigned int i = 0; i < layer.size(); i++) 
                 output_matrix(i) = int(output_matrix(i) >= 0.5);
@@ -119,7 +114,7 @@ class Sigmoid : public Activation {
         }
 
         virtual Matrix activate_prime(const Matrix & layer) override {
-            return activate(layer) * (1 - activate(layer));
+            return activate(layer).multiply(1 - activate(layer));
         }
 
 };
@@ -127,13 +122,9 @@ class Sigmoid : public Activation {
 class ReLU : public Activation {
     public: 
         virtual Matrix activate(const Matrix & layer) override {
-            std::cout << "in ReLU" << std::endl << std::flush;
             Matrix output_matrix (layer);
-            std::cout << "Layer before relu : " << std::endl << layer << std::endl;
             for (unsigned int i = 0; i < layer.size(); i++) 
                 output_matrix(i) = std::max(0.0, output_matrix(i));
-
-            std::cout << "Layer after relu: " << std::endl << output_matrix << std::endl;
 
             return output_matrix;
         }

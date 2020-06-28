@@ -45,18 +45,10 @@ void Network::feedforward(const Matrix & inputs) {
     
     for (auto & layer : layers) {
         if (i == 0) {
-            layer = inputs;
-            std::cout << "first " << layer << std::endl;
-        }
-        else {
-            std::cout << "weights transposed: " << weights.at(i - 1).Transpose() << std::endl;
-
+            layer = inputs;        
+        } else {
             layer = weights.at(i - 1).Transpose().dot(layers.at(i - 1)) + bias.at(i - 1);
-            std::cout << "i: " << i << std::endl;
-            std::cout << "before activate" << std::endl << std::flush;
             layers_activated.at(i) = activations.at(i - 1)->activate(layer); 
-            std::cout << "after activate" << std::endl << std::flush;
-
         }
 
         i++;
@@ -64,10 +56,17 @@ void Network::feedforward(const Matrix & inputs) {
 }
 
 void Network::backpropagate(const Matrix & correct_outputs) {
-    Matrix error = Cost(getOutputLayer(), correct_outputs).multiply(activations.at(activations.size() - 1)->activate_prime(layers.at(layers.size() - 1)));
+    Matrix error = Cost(getOutputLayer(), correct_outputs).multiply(activations.back()->activate_prime(layers.back()));
+    Matrix gradient = layers_activated.at(layers_activated.size() - 2).dot(error.Transpose());
+
+    weights.back() = weights.back() - learning_rate * gradient;
 
     for (int i = layers.size() - 2; i > 0; i--) {
-        error = (weights.at(i + 1).Transpose().dot(error)).multiply(activations.at(i)->activate_prime(layers.at(i)));
+        error = (weights.at(i).dot(error)).multiply(activations.at(i)->activate_prime(layers.at(i)));
+        
+        gradient = layers_activated.at(i - 1).dot(error.Transpose());
+                
+        weights.at(i - 1) = weights.at(i - 1) - learning_rate * gradient;
     }
 
 }
@@ -82,7 +81,22 @@ Matrix & Network::operator = (const std::initializer_list<double> & list) {
     layers     = std::vector<Matrix> (list.size());
     weights    = std::vector<Matrix> (list.size() - 1);
     bias       = std::vector<Matrix> (list.size() - 1);  
-    std::cout << "test" << std::endl;
+}
+
+void Network::train (const std::vector<Matrix> & inputs, const std::vector<Matrix> & outputs) {
+    int i = 0;
+    
+    for (int i = 0; i < inputs.size(); i++) {
+        if(100 * (double(i)/double(inputs.size())) > 2)
+            break;
+
+        std::cout << "Progress: " <<std::setprecision(2) <<100 * (double(i)/double(inputs.size())) << "%" << std::flush;
+        feedforward(inputs.at(i));
+        backpropagate(outputs.at(i));
+        printf("\033[1K");
+        printf("\033[0E");
+    }
+        
 }
 
 void Network::train(vector2D inputs, vector2D output) {
@@ -91,16 +105,15 @@ void Network::train(vector2D inputs, vector2D output) {
 
 
 vector1D Network::predict(vector1D inputs, vector1D output) const {
-
+    return output;
 }
 
 
 double Network::test(vector2D inputs, vector2D output) const {
-
+    return 0;
 }
 
 vector2D Network::getOutput() const {
-    std::cout << "output layer: " << getOutputLayer() << std::endl;
     return getOutputLayer().toVector();
 }
 
@@ -120,7 +133,7 @@ std::vector<Matrix> Network::getBiasVector() const{
 }
 
 std::vector<int> Network::Dimensions() const {
-
+    return dimensions;
 }
 
 Matrix Cost(const Matrix & outputs, const Matrix & correct_outputs) {
@@ -148,11 +161,11 @@ Matrix squaredCost(const Matrix & outputs, const Matrix & correct_outputs) {
 }
 
 std::pair<vector2D, vector2D> train_test_split(vector2D, const double & test_size) {
-
+    
 }
 
 vector1D oneHot(vector1D output_layer) {
-
+    return output_layer;
 }
 
 }
